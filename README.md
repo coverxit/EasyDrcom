@@ -39,13 +39,13 @@
 
 _括号里标注的是作者使用的版本_
 
-请注意，如果向OpenWrt编译的话，请再加上编译参数：
+请注意，如果向OpenWrt编译的话，请再加上编译参数，并且把他放在-DLINUX前面：
     
     -D OPENWRT
     
 这样的话，整体看起来像这样：
 
-    g++ -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpthread
+    g++ -DOPENWRT -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpthread
 
 ###Special Thanks
 ---
