@@ -89,13 +89,9 @@ struct easy_drcom_config {
 #elif defined __APPLE__
 #define VERSION "v0.7 for Mac OSX"
 #elif defined (OPENWRT)
-<<<<<<< HEAD
 #define VERSION "v0.7 for OpenWrt (mips AR7xxx/9xxx)"
 #elif defined (LINUX)
 #define VERSION "v0.7 for Linux"
-=======
-#define VERSION "v0.6 for OpenWrt (mips AR7xxx/9xxx)"
->>>>>>> parent of 11cf89f... 赶脚这样六公寓就有救了
 #endif
 
 int read_config(std::string path)
@@ -217,23 +213,17 @@ void online_func()
                             if (eap->response_md5_challenge(conf.remote.mac)) break;
                         }
                     }
-
+                    
                     if (conf.general.mode <= 1) // U31.R0
                     {
                         std::shared_ptr<drcom_dealer_u31> dealer = std::dynamic_pointer_cast<drcom_dealer_u31>(drcom);
-
+                        
                         if (dealer->start_request()) break;
                         if (dealer->send_login_auth()) break;
                     }
                     else // U62.R0
                     {
                         std::shared_ptr<drcom_dealer_u62> dealer = std::dynamic_pointer_cast<drcom_dealer_u62>(drcom);
-                        
-                        if (dealer->start_request()) break;
-                        if (dealer->send_host_info()) break;
-                        
-                        if (dealer->send_alive_pkt1()) break;
-                        if (dealer->send_alive_pkt2()) break;
                     }
                     
                     while (true) // Keep Alive
@@ -251,12 +241,11 @@ void online_func()
                             else // U62.R0
                             {
                                 std::shared_ptr<drcom_dealer_u62> dealer = std::dynamic_pointer_cast<drcom_dealer_u62>(drcom);
-                                
-                                if (dealer->send_alive_request()) break;
+                            
                                 if (dealer->send_alive_pkt1()) break;
                                 if (dealer->send_alive_pkt2()) break;
                             }
-
+                            
                             state = ONLINE;
                             boost::this_thread::sleep(boost::posix_time::seconds(20));
                         }
@@ -374,16 +363,16 @@ int main(int argc, const char * argv[])
         std::cout.rdbuf(null.rdbuf());
         std::cerr.rdbuf(null.rdbuf());
     }
- 
+    
     SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << "), Code by Shindo." << std::endl << std::endl);
     SYS_LOG_INFO("Initializing..." << std::endl);
     SYS_LOG_INFO("Loading config from '" << config_path << "'..." << std::endl);
-
+    
     // Initialization
     if ((ret = read_config(config_path)) != 0)
         goto end;
-
-
+    
+    
 #if defined(WIN32)
 	WSADATA	wsa;
 	WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -519,7 +508,7 @@ end:
     
     log.close();
     null.close();
-
+    
 #if defined (WIN32)
 	WSACleanup();
 #endif

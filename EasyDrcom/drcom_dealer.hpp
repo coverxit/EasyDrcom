@@ -28,12 +28,12 @@ public:
 class drcom_dealer_u31 : public drcom_dealer_base {
 public:
     drcom_dealer_u31(std::vector<uint8_t> local_mac, std::string local_ip, std::string username, std::string password,
-                 std::string gateway_ip, uint32_t gateway_port, std::string hostname, std::string kernel_version
-                 ) : local_mac(local_mac), local_ip(str_ip_to_vec(local_ip)),
-                     hostname(hostname), kernel_version(kernel_version),
-                     username(username), password(password),
-                     total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
-                     udp(gateway_ip, gateway_port, local_ip)
+                     std::string gateway_ip, uint32_t gateway_port, std::string hostname, std::string kernel_version
+                     ) : local_mac(local_mac), local_ip(str_ip_to_vec(local_ip)),
+    hostname(hostname), kernel_version(kernel_version),
+    username(username), password(password),
+    total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
+    udp(gateway_ip, gateway_port, local_ip)
     {}
     
     int start_request()
@@ -213,7 +213,7 @@ public:
             memcpy(&total_time, &recv[5], 4);
             memcpy(&total_flux, &recv[9], 4);
             memcpy(&balance, &recv[13], 4);
-
+            
 #ifdef OPENWRT
             // network order on openwrt
             total_time = TO_LITTLE_ENDIAN(total_time);
@@ -340,7 +340,7 @@ public:
         pkt_data.insert(pkt_data.end(), 2, 0x00); // Fill 0x00 *2 for timestamp
         
         uint16_t now_time = (uint16_t)(time(NULL) % 86400);
-    
+        
         U31_LOG_SEND_DUMP
         
         auto handler_success = [&](std::vector<uint8_t> recv) -> int {
@@ -461,123 +461,11 @@ public:
     drcom_dealer_u62(std::vector<uint8_t> local_mac, std::string local_ip, std::string username, std::string password,
                      std::string gateway_ip, uint32_t gateway_port, std::string hostname, std::string kernel_version
                      ) : local_mac(local_mac), local_ip(str_ip_to_vec(local_ip)),
-                         hostname(hostname), kernel_version(kernel_version),
-                         username(username), password(password),
-                         total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
-                         udp(gateway_ip, gateway_port, local_ip)
+    hostname(hostname), kernel_version(kernel_version),
+    username(username), password(password),
+    total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
+    udp(gateway_ip, gateway_port, local_ip)
     {}
-    
-    int start_request()
-    {
-        // Misc 0800
-        U62_LOG_INFO("Start Request." << std::endl);
-        
-        std::vector<uint8_t> pkt_data;
-        
-        // fixed length = 8
-        //                                Code, Packet ID
-        pkt_data.insert(pkt_data.end(), { 0x07, pkt_id });
-        pkt_data.insert(pkt_data.end(), { 0x08, 0x00 }); // Type (Packet length as well)
-        pkt_data.insert(pkt_data.end(), { 0x01, 0x00, 0x00, 0x00 }); // Fixed unkown
-        
-        auto handler_success = [&](std::vector<uint8_t> recv) -> int {
-            U62_LOG_RECV_DUMP("Start Request");
-            
-            if (recv[0] != 0x07) // Misc
-                return -1;
-            
-            if (recv[0] != 0x07 && recv[5] != 0x00) // Response for Alive
-                return -1;
-            
-            pkt_id++;
-            U62_LOG_INFO("Gateway return: Response for alive." << std::endl);
-            return 0;
-        };
-        
-        U62_HANDLE_ERROR("Start Request");
-        U62_AUTO_RETRY("Start Request");
-    }
-    
-    int send_host_info()
-    {
-        // Misc, Info username, hostname
-        U62_LOG_INFO("Send Host Info." << std::endl);
-        U62_LOG_DBG("username = " << username << ", password = " << password << std::endl);
-        
-        auth_info.clear();
-        
-        std::vector<uint8_t> pkt_data;
-        
-        /********************** Header *************************/
-        //                                      Code, Packet ID
-        pkt_data.insert(pkt_data.end(), { 0x07, pkt_id });
-        pkt_data.insert(pkt_data.end(), { 0xf4, 0x00 }); // Packet length (also Type)
-        //                                Fixed unkown, maybe type?
-        pkt_data.insert(pkt_data.end(), { 0x03, (uint8_t) username.length() });
-        
-        /*********************** MAC & IP **********************/
-        pkt_data.insert(pkt_data.end(), local_mac.begin(), local_mac.end());
-        pkt_data.insert(pkt_data.end(), local_ip.begin(), local_ip.end());
-        
-        /*********************** Checksum **********************/
-        pkt_data.insert(pkt_data.end(), { 0x02, 0x22, 0x00, 0x0a }); // Fixed unkown
-        
-        // _DrcomCRC32
-        int start = 0x00; int length = 0xf4; // Packet length
-        
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }); // TODO: _DrcomCRC32
-        pkt_data.insert(pkt_data.end(), 4, 0x00); // Fill 0x00 *4
-        
-        /********************** UserName *********************/
-        pkt_data.insert(pkt_data.end(), username.begin(), username.end());
-        
-        /********************** Host Name *******************/
-        // fixed length = 32
-        std::vector<uint8_t> hostname_block(32, 0);
-        memcpy(&hostname_block[0], &hostname[0], hostname.length() <= 32 ? hostname.length() : 32);
-        pkt_data.insert(pkt_data.end(), hostname_block.begin(), hostname_block.end());
-        
-        /********************** DNS & DHCP & Fill ***********/
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // Primary DNS
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // DHCP
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // Secondary DNS
-        pkt_data.insert(pkt_data.end(), 8, 0x00); // Fill 0x00 *8
-        
-        /********************** Host System Info & Fill *****/
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // Unknown 1
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // OS major
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // OS minor
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // OS build
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x02 }); // Unknown 2
-        
-        std::vector<uint8_t> kernel_version_block(32, 0); // fixed length = 32
-        memcpy(&kernel_version_block[0], &kernel_version[0], kernel_version.length() <= 32 ? kernel_version.length() : 32);
-        pkt_data.insert(pkt_data.end(), kernel_version_block.begin(), kernel_version_block.end());
-        
-        pkt_data.insert(pkt_data.end(), 99, 0x00); // Fill 0x00 *99
-        
-        U62_LOG_SEND_DUMP
-        
-        auto handler_success = [&](std::vector<uint8_t> recv) -> int {
-            U62_LOG_RECV_DUMP("Send Host Info");
-            
-            if (recv[0] != 0x07 && recv[4] != 0x04) // Misc, Auth Info
-                return -1;
-            
-            U62_LOG_INFO("Gateway return: Success." << std::endl);
-            
-            // Success
-            int len = recv[6]; // Auth Info length
-            // Disassembled from the Fucking Dr.COM!
-            for (int i = 0x10; i < len + 0x10; i++)
-                auth_info.push_back((recv[i] << (i & 0x07)) + (recv[i] >> (0x08 - (i & 0x07))));
-                                    
-            return 0;
-        };
-        
-        U62_HANDLE_ERROR("Send Host Info");
-        U62_AUTO_RETRY("Send Host Info");
-    }
     
     int send_alive_pkt1()
     {
@@ -672,57 +560,7 @@ public:
         U62_HANDLE_ERROR("Send Alive Packet 2");
         U62_AUTO_RETRY("Send Alive Packet 2");
     }
-    
-    int send_alive_request()
-    {
-        if (login_md5_a.empty()) return -1;
-        if (auth_info.empty()) return -1;
-        
-        U62_LOG_INFO("Send Alive Request." << std::endl);
-        
-        std::vector<uint8_t> pkt_data;
-        pkt_data.push_back(0xFF); // Code
-        pkt_data.insert(pkt_data.end(), login_md5_a.begin(), login_md5_a.end());
-        pkt_data.insert(pkt_data.end(), 3, 0x00); // Fill 0x00 *3
-        pkt_data.insert(pkt_data.end(), auth_info.begin(), auth_info.end());
-        pkt_data.insert(pkt_data.end(), 2, 0x00); // Fill 0x00 *2 for timestamp
-        
-        uint16_t now_time = (uint16_t)(time(NULL) % 86400);
-        
-        U62_LOG_SEND_DUMP
-        
-        auto handler_success = [&](std::vector<uint8_t> recv) -> int {
-            U62_LOG_RECV_DUMP("Send Alive Request");
-            
-            if (recv[0] != 0x07 && recv[5] != 0x00) // Response for Alive
-                return -1;
-            
-            U62_LOG_INFO("Gateway return: Response for alive." << std::endl);
-            
-            // Captured
-            memcpy(&online_time, &recv[32], 4);
-            memcpy(&total_time, &recv[44], 4);
-            memcpy(&total_flux, &recv[48], 4);
-            memcpy(&balance, &recv[52], 4);
-            
-#ifdef OPENWRT
-            // network order on openwrt
-            online_time = TO_LITTLE_ENDIAN(online_time);
-            total_time = TO_LITTLE_ENDIAN(total_time);
-            total_flux = TO_LITTLE_ENDIAN(total_flux);
-            balance = TO_LITTLE_ENDIAN(balance);
-#endif
-            
-            U62_LOG_INFO("Keep Alive succeeded! Timestamp = " << now_time << ", user info:" << std::endl);
-            U62_LOG_INFO("Online Time: " << online_time << " Seconds, Used Time: " << total_time << " Minutes, Used Flux: " << (total_flux & 0x0FFFFFFFF) / 1024.0 << " MB, Balance: " << (balance & 0x0FFFFFFFF) / 10000.0 << " RMB" << std::endl);
-            
-            return 0;
-        };
-        
-        U62_HANDLE_ERROR("Send Alive Request");
-        U62_AUTO_RETRY("Send Alive Request");
-    }
-    
+
 private:
     udp_dealer udp;
     
