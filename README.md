@@ -24,6 +24,8 @@
 
 **EasyDrcom** 将校园网转换为无线信号，从此手机、平板上校园网无需使用学校提供的客户端、无需打开电脑共享Wifi。
 
+有关如何使用 **EasyDrcom**, 请访问 http://bbs.ghtt.net/thread-1984091-1-1.html
+
 ###Compile Tips
 ---
 ####下面以向Linux平台编译为例。
