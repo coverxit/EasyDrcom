@@ -19,3 +19,10 @@
 *.exe
 *.out
 *.app
+
+# Project files
+*.xcodeproj
+
+# Other files
+*.txt
+*.log
