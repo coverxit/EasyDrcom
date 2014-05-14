@@ -32,7 +32,7 @@
 
 编译 **EasyDrcom** 是十分简单的：
 
-    g++ -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpthread
+    g++ -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpcap -lpthread
     
 你或许已经发现了，**EasyDrcom** 依赖于：
     
@@ -47,7 +47,7 @@ _括号里标注的是作者使用的版本_
     
 这样的话，整体看起来像这样：
 
-    g++ -DOPENWRT -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpthread
+    g++ -DOPENWRT -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpcap -lpthread
 
 ###Special Thanks
 ---
