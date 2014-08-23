@@ -405,7 +405,7 @@ public:
                 return 1; // Don't retry when notification
             }
             
-            // In face, this condition is always true
+            // In fact, this condition is always true
             if (eap_header->eap_code == 0x03) // Success
                 EAP_LOG_INFO("Gateway returns: Success" << std::endl);
             

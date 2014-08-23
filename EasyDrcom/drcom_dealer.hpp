@@ -291,7 +291,7 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step
-        pkt_data.insert(pkt_data.end(), { 0x1f, 0x00 }); // Fixed Unknown
+        pkt_data.insert(pkt_data.end(), { 0x1F, 0x00 }); // Fixed Unknown
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Unkown
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
@@ -527,7 +527,7 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step
-        pkt_data.insert(pkt_data.end(), { 0x1f, 0x00 }); // Fixed Unknown
+        pkt_data.insert(pkt_data.end(), { 0x1F, 0x00 }); // Fixed Unknown
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Unkown
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
