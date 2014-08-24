@@ -84,14 +84,16 @@ struct easy_drcom_config {
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
 
-#if defined(WIN32)
-#define VERSION "v0.7 for Windows"
+#define MAJOR_VERSION "v0.8-dev"
+
+#if defined (WIN32)
+#define VERSION (MAJOR_VERSION " for Windows")
 #elif defined __APPLE__
-#define VERSION "v0.7 for Mac OSX"
+#define VERSION (MAJOR_VERSION " for Mac OSX")
 #elif defined (OPENWRT)
-#define VERSION "v0.7 for OpenWrt (mips AR7xxx/9xxx)"
+#define VERSION (MAJOR_VERSION " for OpenWrt (mips AR7xxx/9xxx)")
 #elif defined (LINUX)
-#define VERSION "v0.7 for Linux"
+#define VERSION (MAJOR_VERSION " for Linux")
 #endif
 
 int read_config(std::string path)
@@ -172,6 +174,7 @@ std::shared_ptr<drcom_dealer_base> drcom;
 
 enum ONLINE_STATE
 {
+    OFFLINE_PROCESSING,
     OFFLINE,
     ONLINE_PROCESSING,
     ONLINE,
@@ -274,14 +277,18 @@ void online_func()
         {
             SYS_LOG_ERR("Thread Online: " << e.what() << std::endl);
         }
-    } while (conf.general.auto_redial); // auto redial
+    } while (conf.general.auto_redial && state != OFFLINE_PROCESSING); // auto redial
+    
+    state = OFFLINE;
 }
 
 void offline_func(std::thread* thread_online)
 {
     try
     {
-     //   thread_online->interrupt();
+        state = OFFLINE_PROCESSING;
+        
+        while (state != OFFLINE); // wait for signal
         
         if (conf.general.mode <= 1) // U31.R0
         {
@@ -310,7 +317,7 @@ void offline_func(std::thread* thread_online)
             eap->logoff(conf.remote.mac);
         }
     }
-    state = OFFLINE;
+
     SYS_LOG_INFO("Offline." << std::endl);
 }
 
@@ -447,6 +454,10 @@ int main(int argc, const char * argv[])
                 {
                     SYS_LOG_INFO("Online Processing!" << std::endl);
                 }
+                else if (state == OFFLINE_PROCESSING)
+                {
+                    SYS_LOG_INFO("Offline Processing!" << std::endl);
+                }
                 else if (state == OFFLINE)
                 {
                     SYS_LOG_INFO("Going online..." << std::endl);
@@ -463,8 +474,13 @@ int main(int argc, const char * argv[])
                 {
                     SYS_LOG_INFO("Online Processing!" << std::endl);
                 }
+                else if (state == OFFLINE_PROCESSING)
+                {
+                    SYS_LOG_INFO("Offline Processing!" << std::endl);
+                }
                 else if (state == ONLINE)
                 {
+                    SYS_LOG_INFO("Going offline..." << std::endl);
                     std::thread thread_offline(std::bind(&offline_func, &thread_online));
                 }
             }
@@ -473,7 +489,13 @@ int main(int argc, const char * argv[])
                 if (state == ONLINE_PROCESSING)
                 {
                     SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
-                    break;
+                    continue;
+                }
+                
+                if (state == OFFLINE_PROCESSING)
+                {
+                    SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
+                    continue;
                 }
                 
                 if (state == ONLINE)
