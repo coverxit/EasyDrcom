@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <boost/thread.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <thread>
+#include <chrono>
 
 #include <boost/property_tree/ini_parser.hpp>
 
@@ -130,7 +130,7 @@ int read_config(std::string path)
     SYS_LOG_DBG("General.UserName = " << conf.general.username << ", General.PassWord = " << conf.general.password << ", General.Mode = " << conf.general.mode << std::endl);
     SYS_LOG_DBG("General.AutoOnline = " << (conf.general.auto_online ? "True" : "False") << ", General.AutoRedial = " << (conf.general.auto_redial ? "True" : "False" ) << std::endl);
     SYS_LOG_DBG("Remote.IP:Port = " << conf.remote.ip << ":" << conf.remote.port << ", Remote.UseBroadcast = " << (conf.remote.use_broadcast ? "True" : "False" ) << std::endl);
-    if (!conf.remote.use_broadcast) SYS_LOG_DBG("Remote.MAC = " << hextostr(&conf.remote.mac[0], 6, ':') << std::endl);
+    if (!conf.remote.use_broadcast) SYS_LOG_DBG("Remote.MAC = " << hex_to_str(&conf.remote.mac[0], 6, ':') << std::endl);
     SYS_LOG_DBG("Local.NIC = " << conf.local.nic << ", Local.HostName = " << conf.local.hostname << ", Local.KernelVersion = " << conf.local.kernel_version << std::endl);
     SYS_LOG_DBG("Local.EAPTimeout = " << conf.local.eap_timeout << ", Local.UDPTimeout = " << conf.local.udp_timeout << std::endl);
     
@@ -139,7 +139,7 @@ int read_config(std::string path)
         conf.local.mac = get_mac_address(conf.local.nic);
         
         SYS_LOG_INFO("Fetch NIC IP & MAC successfully." << std::endl);
-        SYS_LOG_INFO("Local.IP = " << conf.local.ip << ", Local.MAC = " << hextostr(&conf.local.mac[0], 6, ':') << std::endl);
+        SYS_LOG_INFO("Local.IP = " << conf.local.ip << ", Local.MAC = " << hex_to_str(&conf.local.mac[0], 6, ':') << std::endl);
     }
     catch (std::exception& e) {
         SYS_LOG_ERR("Failed to fetch NIC info - " << e.what() << std::endl);
@@ -159,7 +159,7 @@ int read_config(std::string path)
         }
         
         SYS_LOG_INFO("Fetch fake settings successfully." << std::endl);
-        SYS_LOG_INFO("Fake.MAC = " << hextostr(&conf.fake.mac[0], 6, ':') << ", Fake.UserName = " << conf.fake.username << ", Fake.PassWord = " << conf.fake.password << std::endl);
+        SYS_LOG_INFO("Fake.MAC = " << hex_to_str(&conf.fake.mac[0], 6, ':') << ", Fake.UserName = " << conf.fake.username << ", Fake.PassWord = " << conf.fake.password << std::endl);
         
     }
     SYS_LOG_INFO("Loaded config successfully." << std::endl);
@@ -247,7 +247,7 @@ void online_func()
                             }
                             
                             state = ONLINE;
-                            boost::this_thread::sleep(boost::posix_time::seconds(20));
+                            std::this_thread::sleep_for(std::chrono::seconds(20));
                         }
                         catch (std::exception& e)
                         {
@@ -268,7 +268,7 @@ void online_func()
             while (false); // run once
             
             SYS_LOG_INFO("Connection broken, try to redial after 5 seconds." << std::endl);
-            boost::this_thread::sleep(boost::posix_time::seconds(5));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
         }
         catch (std::exception& e)
         {
@@ -277,11 +277,11 @@ void online_func()
     } while (conf.general.auto_redial); // auto redial
 }
 
-void offline_func(boost::thread* thread_online)
+void offline_func(std::thread* thread_online)
 {
     try
     {
-        thread_online->interrupt();
+     //   thread_online->interrupt();
         
         if (conf.general.mode <= 1) // U31.R0
         {
@@ -323,7 +323,7 @@ int main(int argc, const char * argv[])
     auto clog_def = std::clog.rdbuf();
     auto cout_def = std::cout.rdbuf();
     auto cerr_def = std::cerr.rdbuf();
-    boost::thread thread_online;
+    std::thread thread_online;
     
 #ifdef OPENWRT
     std::string log_path = "/tmp/EasyDrcom.log";
@@ -423,7 +423,7 @@ int main(int argc, const char * argv[])
     else
     {
         SYS_LOG_INFO("Going online..." << std::endl);
-        thread_online = boost::thread(online_func);
+        thread_online = std::thread(online_func);
     }
     
     if (background)
@@ -450,7 +450,7 @@ int main(int argc, const char * argv[])
                 else if (state == OFFLINE)
                 {
                     SYS_LOG_INFO("Going online..." << std::endl);
-                    thread_online = boost::thread(online_func);
+                    thread_online = std::thread(online_func);
                 }
             }
             else if (!cmd.compare("offline"))
@@ -465,7 +465,7 @@ int main(int argc, const char * argv[])
                 }
                 else if (state == ONLINE)
                 {
-                    boost::thread thread_offline(boost::bind(&offline_func, &thread_online));
+                    std::thread thread_offline(std::bind(&offline_func, &thread_online));
                 }
             }
             else if (!cmd.compare("quit"))

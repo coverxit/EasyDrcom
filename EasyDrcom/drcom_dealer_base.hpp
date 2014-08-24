@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef __INCLUDE_DRCOM_DEALER__
-#define __INCLUDE_DRCOM_DEALER__
 
-#include "udp_dealer.hpp"
-#include "drcom_dealer_base.hpp"
-#include "drcom_dealer_u31.hpp"
-#include "drcom_dealer_u62.hpp"
+#ifndef __INCLUDE_DRCOM_DEALER_BASE__
+#define __INCLUDE_DRCOM_DEALER_BASE__
 
-#endif // __INCLUDE_DRCOM_DEALER__
+class drcom_dealer_base {
+public:
+    drcom_dealer_base() {}
+    virtual ~drcom_dealer_base() {}
+}; // Just for base
+
+#endif

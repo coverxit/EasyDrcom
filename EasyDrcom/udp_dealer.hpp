@@ -17,6 +17,10 @@
 #ifndef __INCLUDE__UDP_DEALER__
 #define __INCLUDE__UDP_DEALER__
 
+#if defined(__APPLE__) || defined(__MACH__) || defined(LINUX) || defined(linux)
+#include <fcntl.h>
+#endif
+
 #if defined(__APPLE__) || defined(__MACH__)
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL SO_NOSIGPIPE
@@ -148,7 +152,7 @@ private:
             retry_times++;                                                                              \
             U31_LOG_ERR("Failed to perform " << step << ", retry times = " << retry_times << std::endl);\
             U31_LOG_INFO("Try to perform " << step << " after 2 seconds." << std::endl);                \
-            boost::this_thread::sleep(boost::posix_time::seconds(2));                                   \
+            std::this_thread::sleep_for(std::chrono::seconds(2));                                       \
         }                                                                                               \
         if (retry_times == MAX_RETRY_TIME)                                                              \
         {                                                                                               \
@@ -189,7 +193,7 @@ private:
             retry_times++;                                                                              \
             U62_LOG_ERR("Failed to perform " << step << ", retry times = " << retry_times << std::endl);\
             U62_LOG_INFO("Try to perform " << step << " after 2 seconds." << std::endl);                \
-            boost::this_thread::sleep(boost::posix_time::seconds(2));                                   \
+            std::this_thread::sleep_for(std::chrono::seconds(2));                                       \
         }                                                                                               \
         if (retry_times == MAX_RETRY_TIME)                                                              \
         {                                                                                               \

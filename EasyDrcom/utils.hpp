@@ -17,9 +17,9 @@
 #ifndef __INCLUDE_UTILS__
 #define __INCLUDE_UTILS__
 
-#include <boost/asio.hpp>
+/*#include <boost/asio.hpp>
 namespace asio = boost::asio;
-using asio::ip::udp;
+using asio::ip::udp;*/
 
 // We don't know why some version of OpenWrt defines LITTLE ENDIAN but actually use BIG ENDIAN.
 #ifdef OPENWRT
@@ -30,7 +30,6 @@ using asio::ip::udp;
 #endif
 
 #include "get_nic_addr.hpp"
-
 #include "md5.h"
 
 std::vector<uint8_t> get_md5_digest(std::vector<uint8_t>& data)
@@ -45,7 +44,7 @@ std::vector<uint8_t> get_md5_digest(std::vector<uint8_t>& data)
     return std::vector<uint8_t>(digest, digest + 16);
 }
 
-std::string hextostr(uint8_t *hex, size_t len, char separator)
+std::string hex_to_str(uint8_t *hex, size_t len, char separator)
 {
     char buf[1024] = {0};
     for (int i = 0; i < len; i++)
@@ -85,11 +84,34 @@ void hexdump(std::vector<uint8_t> hex)
     }
 }
 
+std::vector<std::string> split_string(std::string src, char delimiter = ' ', bool append_last = true)
+{
+    std::string::size_type pos = 0;
+    std::vector<std::string> ret;
+    
+    while ((pos = src.find(delimiter, pos)) != std::string::npos)
+    {
+        ret.push_back(src.substr(0, pos));
+        src = src.substr(pos + 1);
+    }
+    
+    // the last element
+    if (append_last) ret.push_back(src);
+    
+    return ret;
+}
+
 std::vector<uint8_t> str_ip_to_vec(std::string ip)
 {
     std::vector<uint8_t> ret(4, 0);
     
-    auto addr = ntohl(asio::ip::address::from_string(ip).to_v4().to_ulong());
+    auto vec_addr = split_string(ip, '.');
+    if (vec_addr.size() < 4)
+        return ret;
+    
+    unsigned long addr = (atol(vec_addr[0].c_str()) << 24) + (atol(vec_addr[1].c_str()) << 16) + (atol(vec_addr[2].c_str()) << 8) + atol(vec_addr[3].c_str());
+    addr = ntohl(addr);
+    
     memcpy(&ret[0], &addr, 4);
     
     return ret;
