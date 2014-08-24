@@ -1,5 +1,5 @@
-#EasyDrcom - Experimental
-##Current Version: v0.8-dev
+#EasyDrcom
+##Current Version: v0.8
 
 
 ###License

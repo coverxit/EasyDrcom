@@ -84,7 +84,7 @@ struct easy_drcom_config {
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
 
-#define MAJOR_VERSION "v0.8-dev"
+#define MAJOR_VERSION "v0.8"
 
 #if defined (WIN32)
 #define VERSION (MAJOR_VERSION " for Windows")
@@ -175,11 +175,15 @@ std::shared_ptr<drcom_dealer_base> drcom;
 enum ONLINE_STATE
 {
     OFFLINE_PROCESSING,
+    OFFLINE_NOTIFY,
     OFFLINE,
     ONLINE_PROCESSING,
     ONLINE,
 };
 ONLINE_STATE state = OFFLINE;
+
+std::mutex mtx;
+std::condition_variable cv;
 
 std::vector<uint8_t> broadcast_mac = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 std::vector<uint8_t> nearest_mac = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x03 };
@@ -229,7 +233,7 @@ void online_func()
                         std::shared_ptr<drcom_dealer_u62> dealer = std::dynamic_pointer_cast<drcom_dealer_u62>(drcom);
                     }
                     
-                    while (true) // Keep Alive
+                    while (true && state != OFFLINE_PROCESSING) // Keep Alive
                     {
                         try
                         {
@@ -250,7 +254,9 @@ void online_func()
                             }
                             
                             state = ONLINE;
-                            std::this_thread::sleep_for(std::chrono::seconds(20));
+                            
+                            std::unique_lock<std::mutex> lock(mtx);
+                            cv.wait_for(lock, std::chrono::seconds(20));
                         }
                         catch (std::exception& e)
                         {
@@ -266,12 +272,17 @@ void online_func()
                     SYS_LOG_ERR("Go Online: " << e.what() << std::endl);
                     break;
                 }
-                state = OFFLINE;
+                
+                if (state != OFFLINE_PROCESSING)
+                    state = OFFLINE;
             }
             while (false); // run once
             
-            SYS_LOG_INFO("Connection broken, try to redial after 5 seconds." << std::endl);
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            if (state != OFFLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Connection broken, try to redial after 5 seconds." << std::endl);
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+            }
         }
         catch (std::exception& e)
         {
@@ -279,16 +290,22 @@ void online_func()
         }
     } while (conf.general.auto_redial && state != OFFLINE_PROCESSING); // auto redial
     
-    state = OFFLINE;
+    std::unique_lock<std::mutex> lock(mtx);
+    state = OFFLINE_NOTIFY;
+    cv.notify_one();
 }
 
-void offline_func(std::thread* thread_online)
+void offline_func()
 {
     try
     {
         state = OFFLINE_PROCESSING;
         
-        while (state != OFFLINE); // wait for signal
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.notify_one();
+        
+        while (state != OFFLINE_NOTIFY)
+            cv.wait(lock); // wait for signal
         
         if (conf.general.mode <= 1) // U31.R0
         {
@@ -318,20 +335,18 @@ void offline_func(std::thread* thread_online)
         }
     }
 
+    state = OFFLINE;
     SYS_LOG_INFO("Offline." << std::endl);
 }
 
 int main(int argc, const char * argv[])
 {
     int ret = 0;
-    bool background = false;
-    bool redirect_to_null = false;
+    bool background = false, redirect_to_null = false;
     std::string config_path = "EasyDrcom.conf";
     auto clog_def = std::clog.rdbuf();
     auto cout_def = std::cout.rdbuf();
     auto cerr_def = std::cerr.rdbuf();
-    std::thread thread_online;
-    
 #ifdef OPENWRT
     std::string log_path = "/tmp/EasyDrcom.log";
 #else
@@ -430,12 +445,12 @@ int main(int argc, const char * argv[])
     else
     {
         SYS_LOG_INFO("Going online..." << std::endl);
-        thread_online = std::thread(online_func);
+        std::thread(online_func).detach();
     }
     
     if (background)
     {
-        thread_online.join();
+        std::thread(online_func).join();
     }
     else
     {
@@ -454,14 +469,14 @@ int main(int argc, const char * argv[])
                 {
                     SYS_LOG_INFO("Online Processing!" << std::endl);
                 }
-                else if (state == OFFLINE_PROCESSING)
+                else if (state == OFFLINE_PROCESSING || state == OFFLINE_NOTIFY)
                 {
                     SYS_LOG_INFO("Offline Processing!" << std::endl);
                 }
                 else if (state == OFFLINE)
                 {
                     SYS_LOG_INFO("Going online..." << std::endl);
-                    thread_online = std::thread(online_func);
+                    std::thread(online_func).detach();
                 }
             }
             else if (!cmd.compare("offline"))
@@ -481,7 +496,7 @@ int main(int argc, const char * argv[])
                 else if (state == ONLINE)
                 {
                     SYS_LOG_INFO("Going offline..." << std::endl);
-                    std::thread thread_offline(std::bind(&offline_func, &thread_online));
+                    std::thread(offline_func).detach();
                 }
             }
             else if (!cmd.compare("quit"))
@@ -501,7 +516,7 @@ int main(int argc, const char * argv[])
                 if (state == ONLINE)
                 {
                     SYS_LOG_INFO("Going offline..." << std::endl);
-                    offline_func(&thread_online);
+                    offline_func();
                 }
                 
                 SYS_LOG_INFO("Quitting..." << std::endl);

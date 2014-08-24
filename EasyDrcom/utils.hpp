@@ -89,7 +89,7 @@ std::vector<std::string> split_string(std::string src, char delimiter = ' ', boo
     std::string::size_type pos = 0;
     std::vector<std::string> ret;
     
-    while ((pos = src.find(delimiter, pos)) != std::string::npos)
+    while ((pos = src.find(delimiter)) != std::string::npos)
     {
         ret.push_back(src.substr(0, pos));
         src = src.substr(pos + 1);
