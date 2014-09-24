@@ -172,7 +172,7 @@ private:
 
 #define U31_LOG_RECV_DUMP(step)                                                                     \
 {                                                                                                   \
-    U31_LOG_DBG("Received after" << step << ", dump:" << std::endl);                                \
+    U31_LOG_DBG("Received after " << step << ", dump:" << std::endl);                                \
     hexdump(recv);                                                                                  \
 }
 
@@ -213,7 +213,7 @@ private:
 
 #define U62_LOG_RECV_DUMP(step)                                                                     \
 {                                                                                                   \
-    U62_LOG_DBG("Received after" << step << ", dump:" << std::endl);                                \
+    U62_LOG_DBG("Received after " << step << ", dump:" << std::endl);                                \
     hexdump(recv);                                                                                  \
 }
 
