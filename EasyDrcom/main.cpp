@@ -16,6 +16,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <chrono>
 
 #include <boost/property_tree/ini_parser.hpp>
