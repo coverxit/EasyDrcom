@@ -202,10 +202,11 @@ public:
                 return -1;
             
                                         // EAP Request                  // EAP Failure
-            if (eap_header->eap_code != 0x01 && eap_header->eap_code != 0x04)
+            if (eap_header->eap_code != 0x01 /*&& eap_header->eap_code != 0x04*/)
                 return -1;
-            
-            if (eap_header->eap_code == 0x04) // Failure
+				
+            // We don't retry at this time when failure occurs.
+            /*if (eap_header->eap_code == 0x04) // Failure
             {
                 EAP_LOG_INFO("Failure, send Start again." << std::endl);
                 
@@ -214,7 +215,7 @@ public:
                 
                 logoff(gateway_mac);
                 return start(gateway_mac);
-            }
+            }*/
             
             // Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
             if (eap_header->eap_type != 0x01) // Request, Identity

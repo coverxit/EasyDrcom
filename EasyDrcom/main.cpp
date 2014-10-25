@@ -84,14 +84,15 @@ struct easy_drcom_config {
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
 
+#define MAJOR_VERSION "v0.8-with-boost"
 #if defined(WIN32)
-#define VERSION "v0.7 for Windows"
+#define VERSION MAJOR_VERSION " for Windows"
 #elif defined __APPLE__
-#define VERSION "v0.7 for Mac OSX"
+#define VERSION MAJOR_VERSION " for Mac OSX"
 #elif defined (OPENWRT)
-#define VERSION "v0.7 for OpenWrt (mips AR7xxx/9xxx)"
+#define VERSION MAJOR_VERSION " for Mips"
 #elif defined (LINUX)
-#define VERSION "v0.7 for Linux"
+#define VERSION MAJOR_VERSION " for Linux"
 #endif
 
 int read_config(std::string path)
@@ -172,6 +173,7 @@ std::shared_ptr<drcom_dealer_base> drcom;
 
 enum ONLINE_STATE
 {
+	OFFLINE_PROCESSING,
     OFFLINE,
     ONLINE_PROCESSING,
     ONLINE,
@@ -281,8 +283,8 @@ void offline_func(boost::thread* thread_online)
 {
     try
     {
-        thread_online->interrupt();
-        
+		state = OFFLINE_PROCESSING;
+        while (state != OFFLINE); // wait for signal
         if (conf.general.mode <= 1) // U31.R0
         {
             std::shared_ptr<drcom_dealer_u31> dealer = std::dynamic_pointer_cast<drcom_dealer_u31>(drcom);
@@ -310,7 +312,6 @@ void offline_func(boost::thread* thread_online)
             eap->logoff(conf.remote.mac);
         }
     }
-    state = OFFLINE;
     SYS_LOG_INFO("Offline." << std::endl);
 }
 
@@ -447,6 +448,10 @@ int main(int argc, const char * argv[])
                 {
                     SYS_LOG_INFO("Online Processing!" << std::endl);
                 }
+				else if (state == OFFLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Offline Processing!" << std::endl);
+				}
                 else if (state == OFFLINE)
                 {
                     SYS_LOG_INFO("Going online..." << std::endl);
@@ -463,8 +468,13 @@ int main(int argc, const char * argv[])
                 {
                     SYS_LOG_INFO("Online Processing!" << std::endl);
                 }
+				else if (state == OFFLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Offline Processing!" << std::endl);
+				}
                 else if (state == ONLINE)
                 {
+					SYS_LOG_INFO("Going offline..." << std::endl);
                     boost::thread thread_offline(boost::bind(&offline_func, &thread_online));
                 }
             }
@@ -473,9 +483,13 @@ int main(int argc, const char * argv[])
                 if (state == ONLINE_PROCESSING)
                 {
                     SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
-                    break;
+                    continue;
                 }
-                
+                if (state == OFFLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
+					continue;
+				}
                 if (state == ONLINE)
                 {
                     SYS_LOG_INFO("Going offline..." << std::endl);
