@@ -49,13 +49,13 @@ _括号里标注的是作者使用的版本_
 
     g++ -DOPENWRT -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpcap -lpthread
     
-    tomaot 编译命令
+tomaot 编译命令
     
-    entware
+entware
     
      g++ -DOPENWRT -DLINUX -Os -s -Wl,-static -static -static-libgcc -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpcap -lpthread
      
-    hndtool
+hndtool
     
     g++ -DOPENWRT -DLINUX -Os -s -static -std=c++0x -o EasyDrcom md5.c main.cpp -lboost_system -lboost_thread -lboost_atomic -lpcap -lpthread
 
