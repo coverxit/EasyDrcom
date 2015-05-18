@@ -26,6 +26,14 @@
 
 有关如何使用 **EasyDrcom**, 请访问 http://bbs.ghtt.net/thread-1984091-1-1.html
 
+此外，EasyDrcom已推出GUI版，详情请访问：http://bbs.ghtt.net/thread-2013765-1-1.html
+
+###Other projects
+---
+如果需要Python版本（支持d, p, x三版），请参考：https://github.com/drcoms/drcom-generic
+
+此外，这里还有一个增加了802.1X心跳包的版本：https://github.com/sunke-github/Drcom8021x_Openwrt
+
 ###Compile Tips
 ---
 ####下面以向Linux平台编译为例。
