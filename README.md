@@ -26,7 +26,9 @@
 
 有关如何使用 **EasyDrcom**, 请访问 http://bbs.ghtt.net/thread-1984091-1-1.html
 
-此外，EasyDrcom已推出GUI版，详情请访问：http://bbs.ghtt.net/thread-2013765-1-1.html，欲获取源代码，请访问：https://github.com/coverxit/EasyDrcomGUI
+此外，EasyDrcom已推出GUI版，详情请访问：http://bbs.ghtt.net/thread-2013765-1-1.html
+
+欲获取 EasyDrcomGUI 源代码，请访问：https://github.com/coverxit/EasyDrcomGUI
 
 ###Other projects
 ---
