@@ -1,6 +1,7 @@
 #EasyDrcom
 ##Current Version: v0.8
 
+#### GUI Wrapper: https://github.com/coverxit/EasyDrcomGUI
 
 ###License
 ---
