@@ -1,6 +1,8 @@
 #EasyDrcom
 ##Current Version: v0.8
 
+#### Download: (v0.7)[https://github.com/coverxit/EasyDrcom/raw/master/Release/EasyDrcom_v0.7_for_OpenWrt_mips_AR7xxx_AR9xxx.zip]
+
 #### GUI Wrapper: https://github.com/coverxit/EasyDrcomGUI
 
 ###License
