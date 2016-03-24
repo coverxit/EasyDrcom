@@ -45,6 +45,12 @@ public:
         auto handler_success = [&](std::vector<uint8_t> recv) -> int {
             U31_LOG_RECV_DUMP("Start Request");
             
+            if (recv[0] == 0x4d) // Notification
+            {
+                U62_LOG_INFO("Received 'Notification', Send Start Request again." << std::endl);
+                return start_request();
+            }
+            
             if (recv[0] != 0x02) // Start Response
                 return -1;
             
@@ -338,6 +344,12 @@ public:
         
         auto handler_success = [&](std::vector<uint8_t> recv) -> int {
             U31_LOG_RECV_DUMP("Send Alive Request");
+            
+            if (recv[0] == 0x4d) // Notification
+            {
+                U62_LOG_INFO("Received 'Notification', Send Keep Alive Request again." << std::endl);
+                return send_alive_request();
+            }
             
             if (recv[0] != 0x07 && recv[5] != 0x00) // Response for Alive
                 return -1;
