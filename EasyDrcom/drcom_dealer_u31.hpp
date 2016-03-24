@@ -47,7 +47,7 @@ public:
             
             if (recv[0] == 0x4d) // Notification
             {
-                U62_LOG_INFO("Received 'Notification', Send Start Request again." << std::endl);
+                U31_LOG_INFO("Received 'Notification', Send Start Request again." << std::endl);
                 return start_request();
             }
             
@@ -347,7 +347,7 @@ public:
             
             if (recv[0] == 0x4d) // Notification
             {
-                U62_LOG_INFO("Received 'Notification', Send Keep Alive Request again." << std::endl);
+                U31_LOG_INFO("Received 'Notification', Send Keep Alive Request again." << std::endl);
                 return send_alive_request();
             }
             
