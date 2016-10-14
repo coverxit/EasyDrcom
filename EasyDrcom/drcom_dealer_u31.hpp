@@ -19,16 +19,14 @@
 #define __INCLUDE_DRCOM_DEALER_BASE_U31__
 
 class drcom_dealer_u31 : public drcom_dealer_base {
-private:
-    unsigned char version_id[2] = { 0x1F, 0x00 }; //协议版本号（不需要与服务器端一致，程序会自动侦测服务器端版本号）
 public:
     drcom_dealer_u31(std::vector<uint8_t> local_mac, std::string local_ip, std::string username, std::string password,
                      std::string gateway_ip, uint32_t gateway_port, std::string hostname, std::string kernel_version
-                     ) : local_mac(local_mac), local_ip(str_ip_to_vec(local_ip)),
-    hostname(hostname), kernel_version(kernel_version),
-    username(username), password(password),
-    total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
-    udp(gateway_ip, gateway_port, local_ip)
+                    ) : local_mac(local_mac), local_ip(str_ip_to_vec(local_ip)),
+                        hostname(hostname), kernel_version(kernel_version),
+                        username(username), password(password),
+                        total_time(0), total_flux(0), balance(0), online_time(0), pkt_id(0), misc1_flux(0), misc3_flux(0),
+                        udp(gateway_ip, gateway_port, local_ip)
     {}
     
     int start_request()
@@ -241,8 +239,8 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x01 }); // Step
-        pkt_data.insert(pkt_data.end(), { version_id[0], version_id[1] }); // 可认为是协议版本号，若和服务器端的不一致则认证失败
-        pkt_data.insert(pkt_data.end(), { 0x12, 0x34 }); // 随机码，服务器的响应中会包含同样的内容
+        pkt_data.insert(pkt_data.end(), client_version.begin(), client_version.end()); // Client Version
+        pkt_data.insert(pkt_data.end(), { 0xDE, 0xAD }); // Handshake Code
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
         
@@ -266,15 +264,16 @@ public:
             {
                 U31_LOG_INFO("Received 'Misc, File', Send Keep Alive Packet 1 again." << std::endl);
 
-                //复制服务器的协议版本号
-                version_id[0] = recv[6];
-                version_id[1] = recv[7];
+                // fetch client version
+                memcpy(&client_version[0], &recv[6], 2);
 
-                //递归调用太多次会导致程序崩溃，因此加了限制
-                if (retry_times < 10) {
+                // exceed retry times?
+                if (retry_times < 10)
+                {
                     return send_alive_pkt1(retry_times + 1);
                 }
-                else {
+                else
+                {
                     U31_LOG_INFO("Send Too Many Keep Alive Packets!" << std::endl);
                     return -1;
                 }
@@ -304,8 +303,8 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step
-        pkt_data.insert(pkt_data.end(), { version_id[0], version_id[1] }); // 可认为是协议版本号，若和服务器端的不一致则认证失败
-        pkt_data.insert(pkt_data.end(), { 0x12, 0x34 }); // 随机码，服务器的响应中会包含同样的内容
+        pkt_data.insert(pkt_data.end(), client_version.begin(), client_version.end()); // Client Version
+        pkt_data.insert(pkt_data.end(), { 0xDE, 0xAD }); // Handshake Code
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
         
@@ -469,6 +468,9 @@ private:
     
     // Update from Succes & Alive
     uint32_t total_time, total_flux, balance, online_time;
+    
+    // Client Version, used by misc1,3
+    std::vector<uint8_t> client_version = { 0x1F, 0x00 };
     
     // Send Misc1, 3
     uint8_t pkt_id;
