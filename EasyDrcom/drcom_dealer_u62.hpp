@@ -18,6 +18,8 @@
 #define __INCLUDE_DRCOM_DEALER_U62__
 
 class drcom_dealer_u62 : public drcom_dealer_base {
+private:
+    unsigned char version_id[2] = { 0x1F, 0x00 }; //协议版本号（不需要与服务器端一致，程序会自动侦测服务器端版本号）
 public:
     drcom_dealer_u62(std::vector<uint8_t> local_mac, std::string local_ip, std::string username, std::string password,
                      std::string gateway_ip, uint32_t gateway_port, std::string hostname, std::string kernel_version
@@ -28,7 +30,7 @@ public:
     udp(gateway_ip, gateway_port, local_ip)
     {}
     
-    int send_alive_pkt1()
+    int send_alive_pkt1(int retry_times = 0)
     {
         U62_LOG_INFO("Send Alive Packet 1." << std::endl);
         
@@ -37,8 +39,8 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x01 }); // Step
-        pkt_data.insert(pkt_data.end(), { 0x1F, 0x00 }); // Fixed Unknown
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Unkown
+        pkt_data.insert(pkt_data.end(), { version_id[0], version_id[1] }); // 可认为是协议版本号，若和服务器端的不一致则认证失败
+        pkt_data.insert(pkt_data.end(), { 0x12, 0x34 }); // 随机码，服务器的响应中会包含同样的内容
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
         
@@ -61,7 +63,20 @@ public:
             if (recv[5] == 0x06) // File
             {
                 U62_LOG_INFO("Received 'Misc, File', Send Keep Alive Packet 1 again." << std::endl);
-                return send_alive_pkt1();
+
+                //复制服务器的协议版本号
+                version_id[0] = recv[6];
+                version_id[1] = recv[7];
+                
+                //递归调用太多次会导致程序崩溃，因此加了限制
+                if (retry_times < 10) {
+                    return send_alive_pkt1(retry_times + 1);
+                }
+                else {
+                    U62_LOG_INFO("Send Too Many Keep Alive Packets!" << std::endl);
+                    return -1;
+                }
+                
             }
             else
             {
@@ -88,8 +103,8 @@ public:
         pkt_data.push_back(pkt_id);
         pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Type
         pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step
-        pkt_data.insert(pkt_data.end(), { 0x1F, 0x00 }); // Fixed Unknown
-        pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Unkown
+        pkt_data.insert(pkt_data.end(), { version_id[0], version_id[1] }); // 可认为是协议版本号，若和服务器端的不一致则认证失败
+        pkt_data.insert(pkt_data.end(), { 0x43, 0x21 }); // 随机码，服务器的响应中会包含同样的内容
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
         pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
         
