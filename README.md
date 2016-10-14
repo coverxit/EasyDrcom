@@ -70,7 +70,7 @@ _括号里标注的是作者使用的版本_
 
 此外，十分感谢下面同学们代码的贡献（按照首次合并Pull Request时间排序）：
 
-mylight (https://github.com/mylight)
-SwimmingTiger (https://github.com/SwimmingTiger)
+* mylight (https://github.com/mylight)
+* SwimmingTiger (https://github.com/SwimmingTiger)
 
 同时，也离不开许多同学的测试，这里不再一一列举。
