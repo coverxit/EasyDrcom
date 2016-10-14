@@ -86,7 +86,7 @@ struct easy_drcom_config {
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
 
-#define MAJOR_VERSION "v0.8"
+#define MAJOR_VERSION "v0.9"
 
 #if defined (WIN32)
 #define VERSION (MAJOR_VERSION " for Windows")
@@ -388,7 +388,8 @@ int main(int argc, const char * argv[])
         std::cerr.rdbuf(null.rdbuf());
     }
     
-    SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << "), Code by Shindo." << std::endl << std::endl);
+    SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
+    SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
     SYS_LOG_INFO("Initializing..." << std::endl);
     SYS_LOG_INFO("Loading config from '" << config_path << "'..." << std::endl);
     
@@ -527,7 +528,8 @@ int main(int argc, const char * argv[])
             }
             else if (!cmd.compare("help"))
             {
-                SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << "), Code by Shindo." << std::endl << std::endl);
+                SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
+                SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
                 SYS_LOG_INFO("Command list:" << std::endl);
                 SYS_LOG_INFO("online - go online." << std::endl);
                 SYS_LOG_INFO("offline - go offline." << std::endl);
