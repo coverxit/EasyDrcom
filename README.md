@@ -1,5 +1,5 @@
 #EasyDrcom
-##Current Version: v0.8
+##Current Version: v0.9
 
 #### Download: (v0.7)[https://github.com/coverxit/EasyDrcom/raw/master/Release/EasyDrcom_v0.7_for_OpenWrt_mips_AR7xxx_AR9xxx.zip]
 
@@ -67,5 +67,10 @@ _括号里标注的是作者使用的版本_
 **EasyDrcom** 的诞生离不开无数前辈的努力，下面列出的是参照的项目：
 
 * jdrcom (@Google Code: http://code.google.com/p/jdrcom/)
+
+此外，十分感谢下面同学们代码的贡献（按照首次合并Pull Request时间排序）：
+
+mylight (https://github.com/mylight)
+SwimmingTiger (https://github.com/SwimmingTiger)
 
 同时，也离不开许多同学的测试，这里不再一一列举。
