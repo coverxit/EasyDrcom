@@ -77,7 +77,7 @@ struct easy_drcom_config {
 } conf;
 
 // Log Config
-#define EASYDRCOM_DEBUG
+//#define EASYDRCOM_DEBUG
 //#define EASYDRCOM_PRINT_DBG_ON_SCREEN
 #include "log.hpp"
 
@@ -93,7 +93,7 @@ struct easy_drcom_config {
 #elif defined __APPLE__
 #define VERSION (MAJOR_VERSION " for Mac OSX")
 #elif defined (OPENWRT)
-#define VERSION (MAJOR_VERSION " for OpenWrt (mips AR7xxx/9xxx)")
+#define VERSION (MAJOR_VERSION " for OpenWrt")
 #elif defined (LINUX)
 #define VERSION (MAJOR_VERSION " for Linux")
 #endif
@@ -282,7 +282,7 @@ void online_func()
             
             if (state != OFFLINE_PROCESSING)
             {
-                SYS_LOG_INFO("Connection broken, try to redial after 5 seconds." << std::endl);
+                SYS_LOG_ERR("Connection broken, try to redial after 5 seconds." << std::endl);
                 std::this_thread::sleep_for(std::chrono::seconds(5));
             }
         }
@@ -431,116 +431,108 @@ int main(int argc, const char * argv[])
     
     SYS_LOG_INFO("Initialization done!" << std::endl);
     
-    if (background)
-    {
-        SYS_LOG_INFO("Start in background, turn on Auto Online & Auto Redial." << std::endl);
-        conf.general.auto_online = true;
-        conf.general.auto_redial = true;
-    }
-    
-    if (!background)
-        SYS_LOG_INFO("Enter 'help' to get help." << std::endl);
-    
-    if (!conf.general.auto_online)
-    {
-        SYS_LOG_INFO("Enter 'online' to go online!" << std::endl);
-    }
-    else
-    {
-        SYS_LOG_INFO("Going online..." << std::endl);
-        std::thread(online_func).detach();
-    }
-    
-    if (background)
-    {
-        std::thread(online_func).join();
-    }
-    else
-    {
-        // Command Loop
-        std::string cmd;
-        while (true)
-        {
-            std::cin >> cmd;
-            if (!cmd.compare("online"))
-            {
-                if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Already online!" << std::endl);
-                }
-                else if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Online Processing!" << std::endl);
-                }
-                else if (state == OFFLINE_PROCESSING || state == OFFLINE_NOTIFY)
-                {
-                    SYS_LOG_INFO("Offline Processing!" << std::endl);
-                }
-                else if (state == OFFLINE)
-                {
-                    SYS_LOG_INFO("Going online..." << std::endl);
-                    std::thread(online_func).detach();
-                }
-            }
-            else if (!cmd.compare("offline"))
-            {
-                if (state == OFFLINE)
-                {
-                    SYS_LOG_INFO("Haven't been online!" << std::endl);
-                }
-                else if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Online Processing!" << std::endl);
-                }
-                else if (state == OFFLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Offline Processing!" << std::endl);
-                }
-                else if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Going offline..." << std::endl);
-                    std::thread(offline_func).detach();
-                }
-            }
-            else if (!cmd.compare("quit"))
-            {
-                if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
-                    continue;
-                }
-                
-                if (state == OFFLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
-                    continue;
-                }
-                
-                if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Going offline..." << std::endl);
-                    offline_func();
-                }
-                
-                SYS_LOG_INFO("Quitting..." << std::endl);
-                std::cout << "[EasyDrcom Info] Bye Bye!" << std::endl;
-                break;
-            }
-            else if (!cmd.compare("help"))
-            {
-                SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
-                SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
-                SYS_LOG_INFO("Command list:" << std::endl);
-                SYS_LOG_INFO("online - go online." << std::endl);
-                SYS_LOG_INFO("offline - go offline." << std::endl);
-                SYS_LOG_INFO("quit - quit EasyDrcom." << std::endl);
-            }
-            else
-            {
-                SYS_LOG_INFO("Wrong command: " << cmd << std::endl);
-            }
-        }
-    }
+	if(background)
+	{
+		SYS_LOG_INFO("Start in background, turn on Auto Online & Auto Redial." << std::endl);
+		conf.general.auto_online = true;
+		conf.general.auto_redial = true;
+		SYS_LOG_INFO("Going online..." << std::endl);
+		std::thread(online_func).join();
+	}else
+	{
+		SYS_LOG_INFO("Enter 'help' to get help." << std::endl);
+		if (!conf.general.auto_online)
+		{
+			SYS_LOG_INFO("Enter 'online' to go online!" << std::endl);
+		}else
+		{
+			SYS_LOG_INFO("Going online..." << std::endl);
+			std::thread(online_func).detach();
+		}
+		// Command Loop
+		std::string cmd;
+		while (true)
+		{
+			std::cin >> cmd;
+			if (!cmd.compare("online"))
+			{
+				if (state == ONLINE)
+				{
+					SYS_LOG_INFO("Already online!" << std::endl);
+				}
+				else if (state == ONLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Online Processing!" << std::endl);
+				}
+				else if (state == OFFLINE_PROCESSING || state == OFFLINE_NOTIFY)
+				{
+					SYS_LOG_INFO("Offline Processing!" << std::endl);
+				}
+				else if (state == OFFLINE)
+				{
+					SYS_LOG_INFO("Going online..." << std::endl);
+					std::thread(online_func).detach();
+				}
+			}
+			else if (!cmd.compare("offline"))
+			{
+				if (state == OFFLINE)
+				{
+					SYS_LOG_INFO("Haven't been online!" << std::endl);
+				}
+				else if (state == ONLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Online Processing!" << std::endl);
+				}
+				else if (state == OFFLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Offline Processing!" << std::endl);
+				}
+				else if (state == ONLINE)
+				{
+					SYS_LOG_INFO("Going offline..." << std::endl);
+					std::thread(offline_func).detach();
+				}
+			}
+			else if (!cmd.compare("quit"))
+			{
+				if (state == ONLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
+					continue;
+				}
+				
+				if (state == OFFLINE_PROCESSING)
+				{
+					SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
+					continue;
+				}
+				
+				if (state == ONLINE)
+				{
+					SYS_LOG_INFO("Going offline..." << std::endl);
+					offline_func();
+				}
+				
+				SYS_LOG_INFO("Quitting..." << std::endl);
+				std::cout << "[EasyDrcom Info] Bye Bye!" << std::endl;
+				break;
+			}
+			else if (!cmd.compare("help"))
+			{
+				SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
+				SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
+				SYS_LOG_INFO("Command list:" << std::endl);
+				SYS_LOG_INFO("online - go online." << std::endl);
+				SYS_LOG_INFO("offline - go offline." << std::endl);
+				SYS_LOG_INFO("quit - quit EasyDrcom." << std::endl);
+			}
+			else
+			{
+				SYS_LOG_INFO("Wrong command: " << cmd << std::endl);
+			}
+		}
+	}
     
 end:
     std::cout.rdbuf(cout_def);
