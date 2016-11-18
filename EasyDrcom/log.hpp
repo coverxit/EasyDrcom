@@ -60,13 +60,13 @@ std::string log_now()
 #endif
 
 #ifdef EASYDRCOM_DEBUG
-	#define U31_LOG_INFO(info)       LOG_INFO("U62", info)
+	#define U31_LOG_INFO(info)       LOG_INFO("U31", info)
 	#define U31_LOG_ERR(err)         LOG_ERR("U31", err)
 	#define U31_LOG_DBG(db)          LOG_DBG("U31", db)
 
-	#define U62_LOG_INFO(info)       LOG_INFO("U31", info)
-	#define U62_LOG_ERR(err)         LOG_ERR("U31", err)
-	#define U62_LOG_DBG(db)          LOG_DBG("U31", db)
+	#define U62_LOG_INFO(info)       LOG_INFO("U62", info)
+	#define U62_LOG_ERR(err)         LOG_ERR("U62", err)
+	#define U62_LOG_DBG(db)          LOG_DBG("U62", db)
 
 	#define EAP_LOG_INFO(info)  LOG_INFO("EAP", info)
 	#define EAP_LOG_ERR(err)    LOG_ERR("EAP", err)
