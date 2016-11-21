@@ -63,9 +63,9 @@
 #define ETHERNET_HEADER_SIZE    14      /* length of two Ethernet address plus ether type*/
 struct ether_header
 {
-	u_char ether_dhost[ETHER_ADDR_LEN];
-	u_char ether_shost[ETHER_ADDR_LEN];
-	u_short ether_type;
+    u_char ether_dhost[ETHER_ADDR_LEN];
+    u_char ether_shost[ETHER_ADDR_LEN];
+    u_short ether_type;
 };
 #endif
 
@@ -393,13 +393,15 @@ public:
                 memcpy(&noti[0], ((uint8_t*)eap_header + 4 + 5), // 4 - EAPol Header, 5 - EAP Header
                        ntohs(eap_header->eap_length) - 5);
                 
-                EAP_LOG_INFO("Gateway returns: Request, Notification: " << noti << std::endl);
+                SVR_LOG_ERR("Gateway returns: Request, Notification: " << noti << std::endl);
                 
+        /*
                 if (!noti.compare("userid error1"))
                     EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account." << std::endl);
                 
                 if (!noti.compare("userid error3"))
                     EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down." << std::endl);
+        */
                 
                 logoff(gateway_mac); // Need to send a logoff, or the gateway will always send notification
                 
