@@ -60,41 +60,41 @@ std::string log_now()
 #endif
 
 #ifdef EASYDRCOM_DEBUG
-	#define U31_LOG_INFO(info)       LOG_INFO("U31", info)
-	#define U31_LOG_ERR(err)         LOG_ERR("U31", err)
-	#define U31_LOG_DBG(db)          LOG_DBG("U31", db)
+    #define U31_LOG_INFO(info)       LOG_INFO("U31", info)
+    #define U31_LOG_ERR(err)         LOG_ERR("U31", err)
+    #define U31_LOG_DBG(db)          LOG_DBG("U31", db)
 
-	#define U62_LOG_INFO(info)       LOG_INFO("U62", info)
-	#define U62_LOG_ERR(err)         LOG_ERR("U62", err)
-	#define U62_LOG_DBG(db)          LOG_DBG("U62", db)
+    #define U62_LOG_INFO(info)       LOG_INFO("U62", info)
+    #define U62_LOG_ERR(err)         LOG_ERR("U62", err)
+    #define U62_LOG_DBG(db)          LOG_DBG("U62", db)
 
-	#define EAP_LOG_INFO(info)  LOG_INFO("EAP", info)
-	#define EAP_LOG_ERR(err)    LOG_ERR("EAP", err)
-	#define EAP_LOG_DBG(db)     LOG_DBG("EAP", db)
+    #define EAP_LOG_INFO(info)  LOG_INFO("EAP", info)
+    #define EAP_LOG_ERR(err)    LOG_ERR("EAP", err)
+    #define EAP_LOG_DBG(db)     LOG_DBG("EAP", db)
 
-	#define SYS_LOG_INFO(info)  LOG_INFO("EasyDrcom", info)
-	#define SYS_LOG_ERR(err)    LOG_ERR("EasyDrcom", err)
-	#define SYS_LOG_DBG(db)     LOG_DBG("EasyDrcom", db)
+    #define SYS_LOG_INFO(info)  LOG_INFO("EasyDrcom", info)
+    #define SYS_LOG_ERR(err)    LOG_ERR("EasyDrcom", err)
+    #define SYS_LOG_DBG(db)     LOG_DBG("EasyDrcom", db)
 
-	#define SVR_LOG_ERR(err)    LOG_INFO("EAP", err)
+    #define SVR_LOG_ERR(err)    LOG_INFO("EAP", err)
 #else
-	#define U31_LOG_INFO(info)       
-	#define U31_LOG_ERR(err)         
-	#define U31_LOG_DBG(db)          
+    #define U31_LOG_INFO(info)       
+    #define U31_LOG_ERR(err)         
+    #define U31_LOG_DBG(db)          
 
-	#define U62_LOG_INFO(info)       
-	#define U62_LOG_ERR(err)         
-	#define U62_LOG_DBG(db)          
+    #define U62_LOG_INFO(info)       
+    #define U62_LOG_ERR(err)         
+    #define U62_LOG_DBG(db)          
 
-	#define EAP_LOG_INFO(info)  
-	#define EAP_LOG_ERR(err)    
-	#define EAP_LOG_DBG(db)     
+    #define EAP_LOG_INFO(info)  
+    #define EAP_LOG_ERR(err)    
+    #define EAP_LOG_DBG(db)     
 
-	#define SYS_LOG_INFO(info)  LOG_INFO("EasyDrcom", info)
-	#define SYS_LOG_ERR(err)    LOG_ERR("EasyDrcom", err)
-	#define SYS_LOG_DBG(db)     
+    #define SYS_LOG_INFO(info)  LOG_INFO("EasyDrcom", info)
+    #define SYS_LOG_ERR(err)    LOG_ERR("EasyDrcom", err)
+    #define SYS_LOG_DBG(db)     
 
-	#define SVR_LOG_ERR(err)    LOG_ERR("Server",err)
+    #define SVR_LOG_ERR(err)    LOG_ERR("Server",err)
 #endif
 
 #endif // __INCLUDE_LOG__
