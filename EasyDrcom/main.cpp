@@ -305,10 +305,10 @@ void online_func()
     } while (conf.general.auto_redial && state != OFFLINE_PROCESSING && broken_counter < MAX_BROKEN_RETRY); // auto redial
     
     std::unique_lock<std::mutex> lock(mtx);
-    if(broken_counter==MAX_BROKEN_RETRY)
-    state = CONNECTION_BROKEN;
+    if (broken_counter == MAX_BROKEN_RETRY)
+        state = CONNECTION_BROKEN;
     else
-    state = OFFLINE_NOTIFY;
+        state = OFFLINE_NOTIFY;
     cv.notify_one();
 }
 
@@ -541,14 +541,14 @@ int main(int argc, const char * argv[])
     WSAStartup(MAKEWORD(2, 2), &wsa);
 #endif
     
-    if(!request_res()){
+    if (!request_res()){
         ret = ENETRESET;
         goto end;
     }
     
     SYS_LOG_INFO("Initialization done!" << std::endl);
     
-    if(background)
+    if (background)
     {
         SYS_LOG_INFO("Start in background, turn on Auto Online & Auto Redial." << std::endl);
         conf.general.auto_online = true;
@@ -556,16 +556,16 @@ int main(int argc, const char * argv[])
         do{
             SYS_LOG_INFO("Going online..." << std::endl);
             std::thread(online_func).join();
-            if(!release_res()){
+            if (!release_res()){
                 ret = EBUSY;
                 goto end;
             }
             SYS_LOG_INFO("EAP Remains:"<<eap.use_count()<<" Drcom Dealer Remains:"<<drcom.use_count()<<std::endl);
-            if(!request_res()){
+            if (!request_res()){
                 ret = ENETRESET;
                 goto end;
             }
-        }while(state==CONNECTION_BROKEN);
+        }while (state==CONNECTION_BROKEN);
     }
     else
     {
@@ -573,7 +573,8 @@ int main(int argc, const char * argv[])
         if (!conf.general.auto_online)
         {
             SYS_LOG_INFO("Enter 'online' to go online!" << std::endl);
-        }else
+        }
+        else
         {
             SYS_LOG_INFO("Going online..." << std::endl);
             std::thread(online_func).detach();
