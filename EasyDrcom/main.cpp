@@ -70,6 +70,8 @@ struct easy_drcom_config {
         //remove when fixed
         uint32_t pulse_interval;
         uint32_t retry_interval;
+        
+        uint32_t max_broken_retry;
     } local;
     
     struct config_fake {
@@ -86,7 +88,7 @@ struct easy_drcom_config {
 #include "log.hpp"
 
 #define MAX_RETRY_TIME 2
-#define MAX_BROKEN_RETRY 3
+
 #include "utils.hpp"
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
@@ -135,6 +137,7 @@ int read_config(std::string path)
     conf.local.udp_timeout = pt.get("Local.UDPTimeout", 2000);
     conf.local.pulse_interval = pt.get("Local.PulseInterval", 20);
     conf.local.retry_interval = pt.get("Local.RetryInterval", 5);
+    conf.local.max_broken_retry = pt.get("Local.MaxBrokenRetry", 10);
     
     conf.fake.enable = pt.get("Fake.Enable", 0);
     
@@ -144,7 +147,7 @@ int read_config(std::string path)
     if (!conf.remote.use_broadcast) SYS_LOG_DBG("Remote.MAC = " << hex_to_str(&conf.remote.mac[0], 6, ':') << std::endl);
     SYS_LOG_DBG("Local.NIC = " << conf.local.nic << ", Local.HostName = " << conf.local.hostname << ", Local.KernelVersion = " << conf.local.kernel_version << std::endl);
     SYS_LOG_DBG("Local.EAPTimeout = " << conf.local.eap_timeout << ", Local.UDPTimeout = " << conf.local.udp_timeout  << std::endl);
-    SYS_LOG_DBG("Local.PulseInterval = " << conf.local.pulse_interval << ", Local.RetryInterval = " << conf.local.retry_interval << std::endl);
+    SYS_LOG_DBG("Local.PulseInterval = " << conf.local.pulse_interval << ", Local.RetryInterval = " << conf.local.retry_interval << ", Local.MaxBrokenRetry = " <<conf.local.max_broken_retry << std::endl);
     
     try {
         conf.local.ip = get_ip_address(conf.local.nic);
@@ -302,10 +305,10 @@ void online_func()
         {
             SYS_LOG_ERR("Thread Online: " << e.what() << std::endl);
         }
-    } while (conf.general.auto_redial && state != OFFLINE_PROCESSING && broken_counter < MAX_BROKEN_RETRY); // auto redial
+    } while (conf.general.auto_redial && state != OFFLINE_PROCESSING && broken_counter < conf.local.max_broken_retry); // auto redial
     
     std::unique_lock<std::mutex> lock(mtx);
-    if(broken_counter==MAX_BROKEN_RETRY)
+    if(broken_counter==conf.local.max_broken_retry)
         state = CONNECTION_BROKEN;
     else
         state = OFFLINE_NOTIFY;
@@ -553,21 +556,15 @@ int main(int argc, const char * argv[])
         SYS_LOG_INFO("Start in background, turn on Auto Online & Auto Redial." << std::endl);
         conf.general.auto_online = true;
         conf.general.auto_redial = true;
-        do{
-            SYS_LOG_INFO("Going online..." << std::endl);
-            std::thread(online_func).join();
-            if (!release_res())
-            {
-                ret = EBUSY;
-                goto end;
-            }
-            SYS_LOG_INFO("EAP Remains:" << eap.use_count() << " Drcom Dealer Remains:" << drcom.use_count() << std::endl);
-            if (!request_res())
-            {
-                ret = ENETRESET;
-                goto end;
-            }
-        }while (state == CONNECTION_BROKEN);
+        
+        SYS_LOG_INFO("Going online..." << std::endl);
+        std::thread(online_func).join();
+        
+        if (!release_res())
+            ret = EBUSY;
+        
+        if (state == CONNECTION_BROKEN)
+            ret = ENETDOWN;
     }
     else
     {
