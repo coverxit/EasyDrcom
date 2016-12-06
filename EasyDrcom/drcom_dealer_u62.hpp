@@ -28,6 +28,11 @@ public:
                         udp(gateway_ip, gateway_port, local_ip)
     {}
     
+    ~drcom_dealer_u62()
+    {
+        SYS_LOG_INFO("releasing drcom_dealer_u62" << std::endl);
+    }
+    
     int send_alive_pkt1(int retry_times = 0)
     {
         U62_LOG_INFO("Send Alive Packet 1." << std::endl);

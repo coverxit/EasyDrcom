@@ -172,6 +172,11 @@ public:
         resp_md5_id.insert(resp_md5_id.end(), ip.begin(), ip.end());
     }
     
+    ~eap_dealer()
+    {
+        SYS_LOG_INFO("releasing eap_dealer" << std::endl);
+    }
+    
     int start(std::vector<uint8_t> gateway_mac)
     {
         EAP_LOG_INFO("Start." << std::endl);

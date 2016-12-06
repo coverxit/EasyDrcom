@@ -29,6 +29,11 @@ public:
                         udp(gateway_ip, gateway_port, local_ip)
     {}
     
+    ~drcom_dealer_u31()
+    {
+        SYS_LOG_INFO("releasing drcom_dealer_u31" << std::endl);
+    }
+    
     int start_request()
     {
         U31_LOG_INFO("Start Request." << std::endl);
