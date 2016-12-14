@@ -172,6 +172,11 @@ public:
         resp_md5_id.insert(resp_md5_id.end(), ip.begin(), ip.end());
     }
     
+    ~eap_dealer()
+    {
+        SYS_LOG_INFO("releasing eap_dealer" << std::endl);
+    }
+    
     int start(std::vector<uint8_t> gateway_mac)
     {
         EAP_LOG_INFO("Start." << std::endl);
@@ -393,13 +398,15 @@ public:
                 memcpy(&noti[0], ((uint8_t*)eap_header + 4 + 5), // 4 - EAPol Header, 5 - EAP Header
                        ntohs(eap_header->eap_length) - 5);
                 
-                EAP_LOG_INFO("Gateway returns: Request, Notification: " << noti << std::endl);
+                SVR_LOG_ERR("Gateway returns: Request, Notification: " << noti << std::endl);
                 
+        /*
                 if (!noti.compare("userid error1"))
                     EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account." << std::endl);
                 
                 if (!noti.compare("userid error3"))
                     EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down." << std::endl);
+        */
                 
                 logoff(gateway_mac); // Need to send a logoff, or the gateway will always send notification
                 

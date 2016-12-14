@@ -63,6 +63,11 @@ public:
         gateway.sin_addr.s_addr = inet_addr(gateway_ip.c_str());
     }
     
+    ~udp_dealer()
+    {
+        SYS_LOG_INFO("releasing udp_dealer" << std::endl);
+    }
+    
     int post(std::vector<uint8_t>& data, std::function<int(std::vector<uint8_t>)> success, std::function<void(std::string)> error = nullptr)
     {
         try

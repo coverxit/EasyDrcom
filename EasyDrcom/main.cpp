@@ -66,6 +66,12 @@ struct easy_drcom_config {
         
         uint32_t eap_timeout;
         uint32_t udp_timeout;
+        
+        //remove when fixed
+        uint32_t pulse_interval;
+        uint32_t retry_interval;
+        
+        uint32_t max_broken_retry;
     } local;
     
     struct config_fake {
@@ -77,11 +83,13 @@ struct easy_drcom_config {
 } conf;
 
 // Log Config
-#define EASYDRCOM_DEBUG
+//#define EASYDRCOM_DEBUG
 //#define EASYDRCOM_PRINT_DBG_ON_SCREEN
 #include "log.hpp"
 
 #define MAX_RETRY_TIME 2
+#define SUCCESS_DIAL 5
+
 #include "utils.hpp"
 #include "drcom_dealer.hpp"
 #include "eap_dealer.hpp"
@@ -93,7 +101,7 @@ struct easy_drcom_config {
 #elif defined __APPLE__
 #define VERSION (MAJOR_VERSION " for Mac OSX")
 #elif defined (OPENWRT)
-#define VERSION (MAJOR_VERSION " for OpenWrt (mips AR7xxx/9xxx)")
+#define VERSION (MAJOR_VERSION " for OpenWrt")
 #elif defined (LINUX)
 #define VERSION (MAJOR_VERSION " for Linux")
 #endif
@@ -121,22 +129,27 @@ int read_config(std::string path)
     conf.remote.use_broadcast = pt.get("Remote.UseBroadcast", true);
     
     if (!conf.remote.use_broadcast)
-        conf.remote.mac = str_mac_to_vec(pt.get("Remote.MAC", "00:1a:a9:c3:3a:59"));
+    conf.remote.mac = str_mac_to_vec(pt.get("Remote.MAC", "00:1a:a9:c3:3a:59"));
     
     conf.local.hostname = pt.get("Local.HostName", "EasyDrcom for HITwh");
     conf.local.kernel_version = pt.get("Local.KernelVersion", VERSION);
     
     conf.local.eap_timeout = pt.get("Local.EAPTimeout", 1000);
     conf.local.udp_timeout = pt.get("Local.UDPTimeout", 2000);
+    conf.local.pulse_interval = pt.get("Local.PulseInterval", 20);
+    conf.local.retry_interval = pt.get("Local.RetryInterval", 5);
+    conf.local.max_broken_retry = pt.get("Local.MaxBrokenRetry", 5);
     
     conf.fake.enable = pt.get("Fake.Enable", 0);
     
     SYS_LOG_DBG("General.UserName = " << conf.general.username << ", General.PassWord = " << conf.general.password << ", General.Mode = " << conf.general.mode << std::endl);
-    SYS_LOG_DBG("General.AutoOnline = " << (conf.general.auto_online ? "True" : "False") << ", General.AutoRedial = " << (conf.general.auto_redial ? "True" : "False" ) << std::endl);
-    SYS_LOG_DBG("Remote.IP:Port = " << conf.remote.ip << ":" << conf.remote.port << ", Remote.UseBroadcast = " << (conf.remote.use_broadcast ? "True" : "False" ) << std::endl);
-    if (!conf.remote.use_broadcast) SYS_LOG_DBG("Remote.MAC = " << hex_to_str(&conf.remote.mac[0], 6, ':') << std::endl);
-    SYS_LOG_DBG("Local.NIC = " << conf.local.nic << ", Local.HostName = " << conf.local.hostname << ", Local.KernelVersion = " << conf.local.kernel_version << std::endl);
-    SYS_LOG_DBG("Local.EAPTimeout = " << conf.local.eap_timeout << ", Local.UDPTimeout = " << conf.local.udp_timeout << std::endl);
+    SYS_LOG_INFO("General.AutoOnline = " << (conf.general.auto_online ? "True" : "False") << ", General.AutoRedial = " << (conf.general.auto_redial ? "True" : "False" ) << std::endl);
+    SYS_LOG_INFO("Remote.IP:Port = " << conf.remote.ip << ":" << conf.remote.port << ", Remote.UseBroadcast = " << (conf.remote.use_broadcast ? "True" : "False" ) << std::endl);
+    if (!conf.remote.use_broadcast) 
+    SYS_LOG_INFO("Remote.MAC = " << hex_to_str(&conf.remote.mac[0], 6, ':') << std::endl);
+    SYS_LOG_INFO("Local.NIC = " << conf.local.nic << ", Local.HostName = " << conf.local.hostname << ", Local.KernelVersion = " << conf.local.kernel_version << std::endl);
+    SYS_LOG_INFO("Local.EAPTimeout = " << conf.local.eap_timeout << ", Local.UDPTimeout = " << conf.local.udp_timeout  << std::endl);
+    SYS_LOG_INFO("Local.PulseInterval = " << conf.local.pulse_interval << ", Local.RetryInterval = " << conf.local.retry_interval << ", Local.MaxBrokenRetry = " <<conf.local.max_broken_retry << std::endl);
     
     try {
         conf.local.ip = get_ip_address(conf.local.nic);
@@ -171,8 +184,8 @@ int read_config(std::string path)
     return 0;
 }
 
-std::shared_ptr<eap_dealer> eap;
-std::shared_ptr<drcom_dealer_base> drcom;
+eap_dealer* eap;
+drcom_dealer_base* drcom;
 
 enum ONLINE_STATE
 {
@@ -181,8 +194,10 @@ enum ONLINE_STATE
     OFFLINE,
     ONLINE_PROCESSING,
     ONLINE,
+    CONNECTION_BROKEN
 };
 ONLINE_STATE state = OFFLINE;
+unsigned long succeed_dial = 0;
 
 std::mutex mtx;
 std::condition_variable cv;
@@ -192,6 +207,8 @@ std::vector<uint8_t> nearest_mac = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x03 };
 
 void online_func()
 {
+    succeed_dial=0;
+    
     do
     {
         try
@@ -199,7 +216,7 @@ void online_func()
             do
             {
                 state = ONLINE_PROCESSING;
-				try
+                try
                 {
                     if (conf.general.mode != 1) // 宿舍区认证模式
                     {
@@ -225,14 +242,14 @@ void online_func()
                     
                     if (conf.general.mode <= 1) // U31.R0
                     {
-                        std::shared_ptr<drcom_dealer_u31> dealer = std::dynamic_pointer_cast<drcom_dealer_u31>(drcom);
+                        drcom_dealer_u31* dealer = (drcom_dealer_u31*)drcom;
                         
                         if (dealer->start_request()) break;
                         if (dealer->send_login_auth()) break;
                     }
                     else // U62.R0
                     {
-                        std::shared_ptr<drcom_dealer_u62> dealer = std::dynamic_pointer_cast<drcom_dealer_u62>(drcom);
+                        drcom_dealer_u62* dealer = (drcom_dealer_u62*)drcom;
                     }
                     
                     while (true && state != OFFLINE_PROCESSING) // Keep Alive
@@ -241,7 +258,7 @@ void online_func()
                         {
                             if (conf.general.mode <= 1) // U31.R0
                             {
-                                std::shared_ptr<drcom_dealer_u31> dealer = std::dynamic_pointer_cast<drcom_dealer_u31>(drcom);
+                                drcom_dealer_u31* dealer = (drcom_dealer_u31*)drcom;
                                 
                                 if (dealer->send_alive_request()) break;
                                 if (dealer->send_alive_pkt1()) break;
@@ -249,16 +266,17 @@ void online_func()
                             }
                             else // U62.R0
                             {
-                                std::shared_ptr<drcom_dealer_u62> dealer = std::dynamic_pointer_cast<drcom_dealer_u62>(drcom);
-                            
+                                drcom_dealer_u62* dealer = (drcom_dealer_u62*)drcom;
+                                
                                 if (dealer->send_alive_pkt1()) break;
                                 if (dealer->send_alive_pkt2()) break;
                             }
                             
                             state = ONLINE;
+                            succeed_dial++;
                             
                             std::unique_lock<std::mutex> lock(mtx);
-                            cv.wait_for(lock, std::chrono::seconds(20));
+                            cv.wait_for(lock, std::chrono::seconds(conf.local.pulse_interval));
                         }
                         catch (std::exception& e)
                         {
@@ -268,7 +286,7 @@ void online_func()
                         }
                     }
                 }
-				catch (std::exception& e)
+                catch (std::exception& e)
                 {
                     state = OFFLINE;
                     SYS_LOG_ERR("Go Online: " << e.what() << std::endl);
@@ -277,23 +295,19 @@ void online_func()
                 
                 if (state != OFFLINE_PROCESSING)
                     state = OFFLINE;
+                else
+                    state = OFFLINE_NOTIFY;
             }
-            while (false); // run once
+            while (false);
             
-            if (state != OFFLINE_PROCESSING)
-            {
-                SYS_LOG_INFO("Connection broken, try to redial after 5 seconds." << std::endl);
-                std::this_thread::sleep_for(std::chrono::seconds(5));
-            }
         }
         catch (std::exception& e)
         {
             SYS_LOG_ERR("Thread Online: " << e.what() << std::endl);
         }
-    } while (conf.general.auto_redial && state != OFFLINE_PROCESSING); // auto redial
+    }while (false);
     
     std::unique_lock<std::mutex> lock(mtx);
-    state = OFFLINE_NOTIFY;
     cv.notify_one();
 }
 
@@ -307,11 +321,11 @@ void offline_func()
         cv.notify_one();
         
         while (state != OFFLINE_NOTIFY)
-            cv.wait(lock); // wait for signal
+        cv.wait(lock); // wait for signal
         
         if (conf.general.mode <= 1) // U31.R0
         {
-            std::shared_ptr<drcom_dealer_u31> dealer = std::dynamic_pointer_cast<drcom_dealer_u31>(drcom);
+            drcom_dealer_u31* dealer = (drcom_dealer_u31*)drcom;
             
             dealer->send_alive_request();
             dealer->start_request();
@@ -341,6 +355,132 @@ void offline_func()
     SYS_LOG_INFO("Offline." << std::endl);
 }
 
+void console()
+{
+    std::string cmd;
+    while (true)
+    {
+        std::cin >> cmd;
+        if (!cmd.compare("online"))
+        {
+            if (state == ONLINE)
+            {
+                SYS_LOG_INFO("Already online!" << std::endl);
+            }
+            else if (state == ONLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Online Processing!" << std::endl);
+            }
+            else if (state == OFFLINE_PROCESSING || state == OFFLINE_NOTIFY)
+            {
+                SYS_LOG_INFO("Offline Processing!" << std::endl);
+            }
+            else if (state == OFFLINE)
+            {
+                release_res();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                request_res();
+                SYS_LOG_INFO("Going online..." << std::endl);
+                std::thread(online_func).detach();
+            }
+        }
+        else if (!cmd.compare("offline"))
+        {
+            if (state == OFFLINE)
+            {
+                SYS_LOG_INFO("Haven't been online!" << std::endl);
+            }
+            else if (state == ONLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Online Processing!" << std::endl);
+            }
+            else if (state == OFFLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Offline Processing!" << std::endl);
+            }
+            else if (state == ONLINE)
+            {
+                SYS_LOG_INFO("Going offline..." << std::endl);
+                std::thread(offline_func).detach();
+            }
+        }
+        else if (!cmd.compare("quit"))
+        {
+            if (state == ONLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
+                continue;
+            }
+            
+            if (state == OFFLINE_PROCESSING)
+            {
+                SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
+                continue;
+            }
+            
+            if (state == ONLINE)
+            {
+                SYS_LOG_INFO("Going offline..." << std::endl);
+                offline_func();
+            }
+            
+            SYS_LOG_INFO("Quitting..." << std::endl);
+            std::cout << "[EasyDrcom Info] Bye Bye!" << std::endl;
+            break;
+        }
+        else if (!cmd.compare("help"))
+        {
+            SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
+            SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
+            SYS_LOG_INFO("Command list:" << std::endl);
+            SYS_LOG_INFO("online - go online." << std::endl);
+            SYS_LOG_INFO("offline - go offline." << std::endl);
+            SYS_LOG_INFO("quit - quit EasyDrcom." << std::endl);
+        }
+        else
+        {
+            SYS_LOG_INFO("Wrong command: " << cmd << std::endl);
+        }
+    }    
+}
+
+bool release_res()
+{
+    delete eap;
+    delete drcom;
+    return true;
+}
+
+bool request_res()
+{
+    bool ret=true;
+    try
+    {
+        eap = new eap_dealer(conf.local.nic, conf.local.mac, conf.local.ip, conf.general.username, conf.general.password); // the fucking "Segmentation fault", so we must have to use this line all the time!!!
+        
+        if (!conf.fake.enable)
+        {
+            if (conf.general.mode <= 1) // U31.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+            else // U62.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+        }
+        else
+        {
+            if (conf.general.mode <= 1) // U31.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+            else // U62.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+        }
+    }
+    catch (std::exception& e)
+    {
+        SYS_LOG_ERR(e.what() << std::endl);
+        ret=false;
+    }
+    return ret;
+}
+
 int main(int argc, const char * argv[])
 {
     int ret = 0;
@@ -358,18 +498,18 @@ int main(int argc, const char * argv[])
     for (int i = 1; i < argc; i++)
     {
         if (!strcmp(argv[i], "-b"))
-            background = true;
+        background = true;
         else if (!strcmp(argv[i], "-r"))
-            redirect_to_null = true;
+        redirect_to_null = true;
         else if (!strcmp(argv[i], "-c"))
         {
             if (i + 1 < argc)
-                config_path = argv[i+1];
+            config_path = argv[i+1];
         }
         else if (!strcmp(argv[i], "-o"))
         {
             if (i + 1 < argc)
-                log_path = argv[i+1];
+            log_path = argv[i+1];
         }
     }
     
@@ -395,39 +535,15 @@ int main(int argc, const char * argv[])
     
     // Initialization
     if ((ret = read_config(config_path)) != 0)
-        goto end;
+    goto end;
     
     
 #if defined(WIN32)
-	WSADATA	wsa;
-	WSAStartup(MAKEWORD(2, 2), &wsa);
+    WSADATA wsa;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
 #endif
     
-    try
-    {
-        eap = std::shared_ptr<eap_dealer>(new eap_dealer(conf.local.nic, conf.local.mac, conf.local.ip, conf.general.username, conf.general.password)); // the fucking "Segmentation fault", so we must have to use this line all the time!!!
-        
-        if (!conf.fake.enable)
-        {
-            if (conf.general.mode <= 1) // U31.R0
-                drcom = std::shared_ptr<drcom_dealer_base>(new drcom_dealer_u31(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-            else // U62.R0
-                drcom = std::shared_ptr<drcom_dealer_base>(new drcom_dealer_u62(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-        }
-        else
-        {
-            if (conf.general.mode <= 1) // U31.R0
-                drcom = std::shared_ptr<drcom_dealer_base>(new drcom_dealer_u31(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-            else // U62.R0
-                drcom = std::shared_ptr<drcom_dealer_base>(new drcom_dealer_u62(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-        }
-    }
-    catch (std::exception& e)
-    {
-        SYS_LOG_ERR(e.what() << std::endl);
-        ret = ENETRESET;
-        goto end;
-    }
+    
     
     SYS_LOG_INFO("Initialization done!" << std::endl);
     
@@ -436,110 +552,53 @@ int main(int argc, const char * argv[])
         SYS_LOG_INFO("Start in background, turn on Auto Online & Auto Redial." << std::endl);
         conf.general.auto_online = true;
         conf.general.auto_redial = true;
-    }
-    
-    if (!background)
-        SYS_LOG_INFO("Enter 'help' to get help." << std::endl);
-    
-    if (!conf.general.auto_online)
-    {
-        SYS_LOG_INFO("Enter 'online' to go online!" << std::endl);
-    }
-    else
-    {
+        
         SYS_LOG_INFO("Going online..." << std::endl);
-        std::thread(online_func).detach();
-    }
-    
-    if (background)
-    {
-        std::thread(online_func).join();
+        
+        int broken_count=0;
+        do
+        {
+            if (!request_res())
+            {
+                ret = ENETRESET;
+                goto end;
+            }
+            
+            std::thread(online_func).join();
+            
+            release_res();
+            
+            if (succeed_dial > SUCCESS_DIAL)
+            broken_count = 1;
+            else
+            broken_count++;
+            
+            SYS_LOG_ERR("Total Alive Count:" << succeed_dial << std::endl);
+            SYS_LOG_ERR("Connection broken, try to redial after " << conf.local.retry_interval << " seconds." << std::endl);
+            std::this_thread::sleep_for(std::chrono::seconds(conf.local.retry_interval));
+        }
+        while (conf.general.auto_redial && (broken_count <= conf.local.max_broken_retry));
     }
     else
     {
-        // Command Loop
-        std::string cmd;
-        while (true)
+        SYS_LOG_INFO("Enter 'help' to get help." << std::endl);
+        
+        if (!conf.general.auto_online)
         {
-            std::cin >> cmd;
-            if (!cmd.compare("online"))
-            {
-                if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Already online!" << std::endl);
-                }
-                else if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Online Processing!" << std::endl);
-                }
-                else if (state == OFFLINE_PROCESSING || state == OFFLINE_NOTIFY)
-                {
-                    SYS_LOG_INFO("Offline Processing!" << std::endl);
-                }
-                else if (state == OFFLINE)
-                {
-                    SYS_LOG_INFO("Going online..." << std::endl);
-                    std::thread(online_func).detach();
-                }
-            }
-            else if (!cmd.compare("offline"))
-            {
-                if (state == OFFLINE)
-                {
-                    SYS_LOG_INFO("Haven't been online!" << std::endl);
-                }
-                else if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Online Processing!" << std::endl);
-                }
-                else if (state == OFFLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Offline Processing!" << std::endl);
-                }
-                else if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Going offline..." << std::endl);
-                    std::thread(offline_func).detach();
-                }
-            }
-            else if (!cmd.compare("quit"))
-            {
-                if (state == ONLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Please wait for online processing finished." << std::endl);
-                    continue;
-                }
-                
-                if (state == OFFLINE_PROCESSING)
-                {
-                    SYS_LOG_INFO("Please wait for offline processing finished." << std::endl);
-                    continue;
-                }
-                
-                if (state == ONLINE)
-                {
-                    SYS_LOG_INFO("Going offline..." << std::endl);
-                    offline_func();
-                }
-                
-                SYS_LOG_INFO("Quitting..." << std::endl);
-                std::cout << "[EasyDrcom Info] Bye Bye!" << std::endl;
-                break;
-            }
-            else if (!cmd.compare("help"))
-            {
-                SYS_LOG_INFO("EasyDrcom " << VERSION << " (build on " << __DATE__ << " " << __TIME__ << ")" << std::endl);
-                SYS_LOG_INFO("Code by Shindo, Contributors: mylight, SwimmingTiger." << std::endl << std::endl);
-                SYS_LOG_INFO("Command list:" << std::endl);
-                SYS_LOG_INFO("online - go online." << std::endl);
-                SYS_LOG_INFO("offline - go offline." << std::endl);
-                SYS_LOG_INFO("quit - quit EasyDrcom." << std::endl);
-            }
-            else
-            {
-                SYS_LOG_INFO("Wrong command: " << cmd << std::endl);
-            }
+            SYS_LOG_INFO("Enter 'online' to go online!" << std::endl);
         }
+        else
+        {
+            SYS_LOG_INFO("Going online..." << std::endl);
+            if (!request_res())
+            {
+                ret = ENETRESET;
+                goto end;
+            }
+            std::thread(online_func).detach();
+        }
+        // Command Loop
+        console();
     }
     
 end:
@@ -551,7 +610,7 @@ end:
     null.close();
     
 #if defined (WIN32)
-	WSACleanup();
+    WSACleanup();
 #endif
     return ret;
 }

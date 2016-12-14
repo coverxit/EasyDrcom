@@ -1,3 +1,7 @@
+###注意！
+---
+本分支主要用于配合EasyDrcom for OpenWrt，代码改动也主要通过OpenWrt平台进行验证！如果要用于其他平台建议使用原分支！
+
 #EasyDrcom
 ##Current Version: v0.9
 
