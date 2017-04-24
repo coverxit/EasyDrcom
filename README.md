@@ -1,11 +1,11 @@
-#EasyDrcom
-##Current Version: v0.9
+# EasyDrcom
+## Current Version: v0.9
 
 #### Download: (v0.7)[https://github.com/coverxit/EasyDrcom/raw/master/Release/EasyDrcom_v0.7_for_OpenWrt_mips_AR7xxx_AR9xxx.zip]
 
 #### GUI Wrapper: https://github.com/coverxit/EasyDrcomGUI
 
-###License
+### License
 ---
     Copyright (C) 2014 Shindo
     
@@ -21,7 +21,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-###What's EasyDrcom?
+### What's EasyDrcom?
 ---
 **EasyDrcom** 是 **_Shindo_** 编写的为哈尔滨工业大学（威海）量身定制的**第三方Dr.COM客户端**，可在教学区、家属区、学生区使用，可运行于_Windows, Mac OS X, Linux_（包括_OpenWrt_）。 
 
@@ -33,15 +33,15 @@
 
 欲获取 EasyDrcomGUI 源代码，请访问：https://github.com/coverxit/EasyDrcomGUI
 
-###Other projects
+### Other projects
 ---
 如果需要Python版本（支持d, p, x三版），请参考：https://github.com/drcoms/drcom-generic
 
 此外，这里还有一个增加了802.1X心跳包的版本：https://github.com/sunke-github/Drcom8021x_Openwrt
 
-###Compile Tips
+### Compile Tips
 ---
-####下面以向Linux平台编译为例。
+#### 下面以向Linux平台编译为例。
 
 编译 **EasyDrcom** 是十分简单的：
 
@@ -62,7 +62,7 @@ _括号里标注的是作者使用的版本_
 
     g++ -DOPENWRT -DLINUX -Os -s -std=c++0x -o EasyDrcom md5.c main.cpp -lpcap -lpthread
 
-###Special Thanks
+### Special Thanks
 ---
 **EasyDrcom** 的诞生离不开无数前辈的努力，下面列出的是参照的项目：
 
