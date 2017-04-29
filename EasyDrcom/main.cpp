@@ -355,6 +355,42 @@ void offline_func()
     SYS_LOG_INFO("Offline." << std::endl);
 }
 
+bool release_res()
+{
+    delete eap;
+    delete drcom;
+    return true;
+}
+
+bool request_res()
+{
+    bool ret=true;
+    try
+    {
+        eap = new eap_dealer(conf.local.nic, conf.local.mac, conf.local.ip, conf.general.username, conf.general.password); // the fucking "Segmentation fault", so we must have to use this line all the time!!!
+        
+        if (!conf.fake.enable)
+        {
+            if (conf.general.mode <= 1) // U31.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+            else // U62.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+        }
+        else
+        {
+            if (conf.general.mode <= 1) // U31.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+            else // U62.R0
+            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
+        }
+    }
+    catch (std::exception& e)
+    {
+        SYS_LOG_ERR(e.what() << std::endl);
+        ret=false;
+    }
+    return ret;
+}
 void console()
 {
     std::string cmd;
@@ -444,42 +480,6 @@ void console()
     }    
 }
 
-bool release_res()
-{
-    delete eap;
-    delete drcom;
-    return true;
-}
-
-bool request_res()
-{
-    bool ret=true;
-    try
-    {
-        eap = new eap_dealer(conf.local.nic, conf.local.mac, conf.local.ip, conf.general.username, conf.general.password); // the fucking "Segmentation fault", so we must have to use this line all the time!!!
-        
-        if (!conf.fake.enable)
-        {
-            if (conf.general.mode <= 1) // U31.R0
-            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-            else // U62.R0
-            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.local.mac, conf.local.ip, conf.general.username, conf.general.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-        }
-        else
-        {
-            if (conf.general.mode <= 1) // U31.R0
-            drcom = (drcom_dealer_base*)(new drcom_dealer_u31(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-            else // U62.R0
-            drcom = (drcom_dealer_base*)(new drcom_dealer_u62(conf.fake.mac, conf.local.ip, conf.fake.username, conf.fake.password, conf.remote.ip, conf.remote.port, conf.local.hostname, conf.local.kernel_version));
-        }
-    }
-    catch (std::exception& e)
-    {
-        SYS_LOG_ERR(e.what() << std::endl);
-        ret=false;
-    }
-    return ret;
-}
 
 int main(int argc, const char * argv[])
 {
