@@ -49,14 +49,18 @@
     
 你或许已经发现了，**EasyDrcom** 依赖于：
     
-    libpcap (1.5.3)
-    boost (1.55.0)
+    libpcap (1.5.3), 仅头文件
+    boost (1.55.0)
 
 _括号里标注的是作者使用的版本_
 
+如果你需要指定boost和libpcap的路径，请使用-I来指定头文件目录以及-L来指定库文件目录。
+
+    g++ -DLINUX -Os -s -std=c++0x -I/path/to/boost/ -I/path/to/libpcap/ -L/path/to/libpcap/ -o EasyDrcom md5.c main.cpp -lpcap -lpthread 
+
 请注意，如果向OpenWrt编译的话，请再加上编译参数，并且把他放在-DLINUX前面：
     
-    -D OPENWRT
+    -DOPENWRT
     
 这样的话，整体看起来像这样：
 
